@@ -1931,6 +1931,34 @@ const app = document.getElementById('app');
 let student = store.get('lt_student', null);
 let progress = {};
 let readDone = {};
+// 從試算表取回這位學生過去的過關紀錄（換電腦、電腦還原後也看得到）
+function syncMine(){
+  if(!CONFIG.GAS_URL || !student) return;
+  const me = sid();
+  fetch(CONFIG.GAS_URL + `?action=mine&cls=${encodeURIComponent(student.cls)}&seat=${encodeURIComponent(student.seat)}`)
+    .then(r=>r.text()).then(t=>{
+      const d = JSON.parse(t); if(!d.rows || sid()!==me) return;
+      const srv = {};
+      d.rows.forEach(r=>{
+        if(r.mode==='錯題再練' || !r.stage) return;
+        const id = String(r.stage), total = +r.total||0, correct = +r.correct||0, secs = +r.secs||0;
+        const lim = (+r.lim || (/^e\d/.test(id) ? CONFIG.EXAM_LIMIT_MIN : CONFIG.LIMIT_MIN)) * 60;
+        const ok = total>0 && correct===total && secs<=lim && (+r.leaves||0)<=CONFIG.LEAVE_ALLOW;
+        const x = srv[id] = srv[id] || {tries:0, best:0, n:total, passed:false};
+        x.tries++; x.best = Math.max(x.best, correct); x.n = total;
+        if(ok && (!x.passed || secs < x.passSecs)){ x.passed = true; x.passSecs = secs; }
+        if(U[id]) readDone[id] = 1;
+      });
+      Object.entries(srv).forEach(([id,x])=>{
+        const p = progress[id] || {tries:0, best:0, n:x.n, passed:false};
+        p.tries = Math.max(p.tries, x.tries); p.best = Math.max(p.best, x.best); p.n = x.n || p.n;
+        if(x.passed && (!p.passed || x.passSecs < (p.passSecs||1e9))){ p.passed = true; p.passSecs = x.passSecs; }
+        progress[id] = p;
+      });
+      saveProg();
+      if(document.getElementById('swap')) home();   // 正在看地圖時，馬上更新畫面
+    }).catch(()=>{});
+}
 function sid(){ return student ? `${student.cls}-${student.seat}` : 'guest'; }
 function loadStudent(){ progress = store.get('lt_prog_'+sid(), {}); readDone = store.get('lt_read_'+sid(), {}); }
 function saveProg(){ store.set('lt_prog_'+sid(), progress); store.set('lt_read_'+sid(), readDone); }
@@ -1968,7 +1996,7 @@ function login(){
     const cls = document.getElementById('cls').value.trim(), seat = String(+document.getElementById('seat').value||''), name = document.getElementById('nm').value.trim();
     const err = document.getElementById('lerr');
     if(!cls || !seat || seat==='0' || !name){ err.textContent='班級、座號、姓名都要填喔！'; err.classList.remove('hidden'); return; }
-    student = {cls, seat, name}; store.set('lt_student', student); loadStudent(); home();
+    student = {cls, seat, name}; store.set('lt_student', student); loadStudent(); home(); syncMine();
   };
   document.getElementById('tch').onclick = teacher;
 }
@@ -2519,7 +2547,7 @@ function renderBoard(){
       ${ctBoardList(ps, total, '')}`;
   });
 }
-const TRAIL = [[30,232],[150,210],[80,178],[190,150],[120,118],[215,92],[170,66],[236,36]];
+const TRAIL = [[70,232],[150,210],[80,178],[190,150],[120,118],[215,92],[170,66],[236,36]];
 function trailPoint(f){
   const seg = []; let L = 0;
   for(let i=1;i<TRAIL.length;i++){ const d = Math.hypot(TRAIL[i][0]-TRAIL[i-1][0], TRAIL[i][1]-TRAIL[i-1][1]); seg.push(d); L+=d; }
@@ -2529,13 +2557,18 @@ function trailPoint(f){
 }
 function mountainSVG(ps, total, g){
   const col = GROUP_COLOR[g];
-  const byPos = {};
+  const bucket = p => Math.round((total ? p.correct/total : 0)*20);
+  const cnt = {}; ps.forEach(p=>{ const k=bucket(p); cnt[k]=(cnt[k]||0)+1; });
+  const seen = {};
   const climbers = ps.map((p,i)=>{
-    const f = total ? p.correct/total : 0; const k = Math.round(f*20);
-    const j = byPos[k] = (byPos[k]||0)+1;
-    const [x,y] = trailPoint(f);
-    const dx = (j-1)%2 ? -((j)>>1)*24 : ((j-1)>>1)*24;
-    return {x:x+dx, y:y, p, below:(j-1)%2===1, top:p.done && p.correct===total};
+    const f = total ? p.correct/total : 0; const k = bucket(p);
+    const j = seen[k] = (seen[k]||0); seen[k]++;
+    const n = cnt[k], perRow = 5, row = Math.floor(j/perRow), col = j%perRow;
+    const inRow = Math.min(perRow, n - row*perRow);
+    let [x,y] = trailPoint(f);
+    x = x + (col - (inRow-1)/2)*24; y = y - row*24;
+    x = Math.max(12, Math.min(388, x)); y = Math.max(14, Math.min(240, y));
+    return {x, y, p, below:false, crowd:n>2, top:p.done && p.correct===total};
   });
   return `<svg viewBox="0 0 400 250" class="msvg">
     <defs><linearGradient id="mg${g}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#9fb3a3"/><stop offset="1" stop-color="#5d7a64"/></linearGradient></defs>
@@ -2546,15 +2579,15 @@ function mountainSVG(ps, total, g){
     <line x1="236" y1="30" x2="236" y2="6" stroke="#333" stroke-width="2"/><polygon points="236,6 258,12 236,18" fill="${col}"/>
     ${[0.25,0.5,0.75].map(f=>{ const [x,y]=trailPoint(f); return `<text x="${x+10}" y="${y+4}" font-size="9" fill="#ffffffcc">${Math.round(f*total)}</text>`; }).join('')}
     ${climbers.map(c=>`<g class="climber" style="transform:translate(${c.x}px,${c.y}px)">
-      <circle r="9" fill="${c.top?'#f5c542':col}" stroke="#fff" stroke-width="2"/>
-      <text y="4" text-anchor="middle" font-size="10" fill="#fff" font-weight="700">${String(c.p.name).slice(-1)}</text>
-      <text y="${c.below?22:-12}" text-anchor="middle" font-size="10" fill="#222" font-weight="700" paint-order="stroke" stroke="#fff" stroke-width="3">${c.p.name}${c.top?' 🚩':''}</text></g>`).join('')}
+      <circle r="11" fill="${c.top?'#f5c542':col}" stroke="#fff" stroke-width="2"/>
+      <text y="3" text-anchor="middle" font-size="8.5" fill="#fff" font-weight="700">${String(c.p.name).length>2?String(c.p.name).slice(-2):String(c.p.name)}</text>
+      ${c.top?'<text y="-14" text-anchor="middle" font-size="12">🚩</text>':''}</g>`).join('')}
   </svg>`;
 }
 
 flushQueue();
 loadBank();
-if(student) loadStudent();
+if(student){ loadStudent(); syncMine(); }
 home();
 </script>
 </body>

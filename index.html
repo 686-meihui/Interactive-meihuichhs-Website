@@ -191,6 +191,11 @@ table.lb tr.me td{background:#fff5cf}
 .chip2.on{background:#fffaf0;border-color:#e8cf95;opacity:1}
 .chip2.right{border-color:var(--green);background:var(--green-soft)}
 .chip2.wrong{border-color:var(--red);background:var(--red-soft)}
+.bigpass.nearp{background:#fff1c2;color:#8a5d00}
+.near-t{color:#b06a00}
+.sticker{display:flex;gap:12px;align-items:center;justify-content:center;background:#fffaf0;border:2px dashed #e8cf95;border-radius:14px;padding:10px 14px;margin:14px auto 4px;max-width:460px;text-align:left;font-size:15px}
+.sticker .stk{font-size:44px;animation:pop .8s ease-out}
+.mile{margin:8px auto;font-weight:700;color:var(--red)}
 footer{color:var(--muted);font-size:13px;margin-top:30px;text-align:center}
 @media (max-width:520px){h1{font-size:22px}.qtext{font-size:18px}.qtext .big{font-size:26px}}
 </style>
@@ -2013,6 +2018,7 @@ function home(){
   <div class="tabs">${MODULES.map((m,i)=>`<button class="tab ${i===curMod?'on':''}" data-mod="${i}">${m.title}</button>`).join('')}<button class="tab contestbtn" id="ctjoin">🏔 課堂競賽</button></div>
   <div class="card how"><span>👤 <b>${student.cls} 班 ${student.seat} 號 ${student.name}</b></span>
   <span>已過關 <b>${done}</b> / ${totalN} 關</span>
+  <span>🏅 努力貼紙 <b>${stickerCount()}</b> 張</span>
   <span class="sub">${{loading:'☁️ 正在取回紀錄…', ok:`☁️ 已取回雲端紀錄 ${SYNC.n} 筆`, old:'⚠ 無法取回紀錄：請老師確認 Apps Script 已「部署新版本」', fail:'⚠ 網路連線失敗，暫時無法取回紀錄'}[SYNC.state]||''}</span>
   <button class="btn ghost small" id="swap" style="margin-left:auto">換人登入</button></div>
   <div class="card how"><b>闖關方式：</b><span class="chip learn">📖 單元</span>先閱讀重點，再分項練習
@@ -2100,6 +2106,45 @@ function flushQueue(){
   fetch(CONFIG.GAS_URL, {method:'POST', mode:'no-cors', headers:{'Content-Type':'text/plain;charset=utf-8'}, body:JSON.stringify({records:queue})})
     .then(()=>store.set('lt_queue', []))
     .catch(()=>{}); // 網路斷線時留在佇列，下次再送
+}
+
+
+// =========================================================
+//        鼓勵話語與努力貼紙（老師可自行增刪句子）
+// =========================================================
+const CHEER = {
+  pass: ['太厲害了！全對過關！','專注的你最耀眼！','這麼難你也克服了，真有耐心！','滿分！你的努力全都看得見！','實力派就是你！',
+    '一題都難不倒你，帥氣過關！','過關！給認真的自己一個掌聲 👏','你把知識變成自己的了，太棒了！','穩穩的實力，漂亮的成績！',
+    '恭喜登頂！山頂的風景是不是很美？','你的專心，換來了完美的成績！','果然是你！又順利拿下一關！','漂亮！這一關被你征服了！'],
+  near: ['只差臨門一腳！下一回一定過關！','你幾乎全都會了，好棒！再一次就成功！','差一點點不是失敗，是成功正在敲門！',
+    '錯的那{w}題記下來，它就是你下次過關的鑰匙。','這麼接近滿分，代表你真的有在用心！','深呼吸，看一下錯題詳解，下一回穩穩拿下！',
+    '高手也會失手一兩題，重要的是再站起來。','你已經爬到山頂前一步了，再撐一下！','只差一點點，你的實力已經在那裡了！',
+    '九成功力已經練成，最後一成馬上到手！','能答對 {s} 題，你比自己想像的還厲害！','錯題是偷偷送給你的提示，看完它就是你的了！',
+    '再試一次，這次你會更快、更準！','你的努力看得見，過關只是時間問題！','別生氣，差一點點代表你真的很接近了！'],
+  slow: ['全部答對，超厲害！下次只要再快一點點就過關了！','你都會了！接下來練到熟，讓答案一看就跳出來！',
+    '滿分的實力已經有了，現在來挑戰速度吧！','答對全部真不簡單！熟能生巧，下一回一定來得及！','答案你都知道，再多練一回，速度自然會跟上！'],
+  leave: ['你很有實力，下一回專心待在頁面上，一定能過關！','專注是你的超能力，下一回把它打開吧！','靠自己的實力過關，最有成就感喔！'],
+  low: ['每練一次，就離過關更近一步！','這個單元比較難，你願意挑戰就很棒了！','先回去看看重點，再回來，你會發現題目變簡單了！',
+    '學習就像爬山，現在是在累積體力！','錯了沒關係，弄懂比答對更重要！','你沒有放棄，這就是最厲害的地方！',
+    '慢慢來，比較快。看完詳解再挑戰一次吧！','今天的錯題，是明天的分數！','每一題錯誤都在幫你變強。','先求懂，再求快，你一定做得到！'],
+  effort: ['專注的你最有魅力！','這麼難你也撐到最後，真有耐心！','認真作答的你，最好看！','你今天又多學會了一些東西！',
+    '堅持到最後一題，就是贏家！','願意再試一次，就是勇氣！','用心的你，老師都看見了！','一步一腳印，你正在變強！',
+    '你的毅力值又增加了！','不放棄的你，閃閃發光！','每一次練習都算數！','給自己一個大大的讚！','認真的樣子，帥氣又美麗！','你的努力，正在悄悄開花！']
+};
+const STICKERS = ['🌟','🍀','🦊','🐳','🌈','🔥','🐼','🦉','🌻','🚀','🎈','🐬','🍎','🧸','🦄','🐯','🌙','🍉','🐧','🎯'];
+function cheerPick(kind, vars={}){
+  const list = CHEER[kind]; const key = 'lt_recent_'+kind;
+  const recent = store.get(key, []); const keep = Math.min(6, list.length-1);
+  const cand = list.map((_,i)=>i).filter(i=>!recent.includes(i));
+  const k = pick(cand.length?cand:list.map((_,i)=>i));
+  store.set(key, [k, ...recent].slice(0, keep));
+  return list[k].replace('{w}', vars.w ?? '').replace('{s}', vars.s ?? '');
+}
+function stickerCount(){ return Object.values(progress).reduce((a,p)=>a+(p.tries||0),0); }
+function stickerHTML(){
+  const n = stickerCount(); const em = STICKERS[(n*7)%STICKERS.length];
+  const mile = n>0 && n%10===0 ? `<div class="mile">🎉 收集滿 ${n} 張努力貼紙！你真的很努力！</div>` : '';
+  return `<div class="sticker"><span class="stk">${em}</span><div><b>努力貼紙 +1</b>（累積 ${n} 張）<br>${cheerPick('effort')}</div></div>${mile}`;
 }
 
 // ---------- 作答保護：禁止複製、偵測離開頁面 ----------
@@ -2228,8 +2273,10 @@ function runQuiz(cfg){
     const official = !cfg.redo;               // 錯題再練不列入過關
     const leaveOK = leaves <= CONFIG.LEAVE_ALLOW;
     const passed = official && allCorrect && timeOK && leaveOK;
+    let prevBest = null;
     if (official){
       const p = progress[cfg.id] || {tries:0, best:0, n:qs.length, passed:false};
+      prevBest = p.tries ? p.best : null;
       p.tries++; p.n=qs.length; p.best=Math.max(p.best, score);
       if(passed && !p.passed){ p.passed=true; p.passSecs=secs; p.passAt=new Date().toISOString(); }
       progress[cfg.id]=p; saveProg();
@@ -2238,24 +2285,29 @@ function runQuiz(cfg){
       total:qs.length, correct:score, allCorrect, secs, avg, passed, minAvg:limitMin, limitMin, leaves, awaySecs});
     if(cfg.contest){ ctReport(cfg, answeredN, score, secs, leaves, true); return ctResult(cfg, score, qs.length, secs); }
     const nxt = cfg.stage ? nextStage(cfg.stage) : null;
-    let msg;
-    if (passed) msg = '<b class="ok-t">🎉 全對過關！</b>可以往下一關前進。';
-    else if (!official) msg = allCorrect ? '錯題都會了！回到正式練習，全對才算過關。' : '還有不熟的，再看一次詳解吧。';
-    else if (allCorrect && timeOK && !leaveOK) msg = `<b class="k">全對，但作答中離開頁面 ${leaves} 次，這一回不算過關。</b><br>請留在作答頁面、不查資料，再挑戰一次！`;
-    else if (!leaveOK) msg = `答對 ${score} 題，而且作答中離開頁面 ${leaves} 次。<b>要全對、在時間內、不離開頁面才算過關</b>，再挑戰一次！`;
-    else if (allCorrect && !timeOK) msg = `<b class="k">全對，但超過 ${limitMin} 分鐘了！</b><br>把重點記熟、不看講義，在時間內完成才算過關，再挑戰一次吧！`;
-    else if (!timeOK) msg = `答對 ${score} 題，而且超過 ${limitMin} 分鐘。<b>要全對、在時間內完成才算過關</b>，先把錯題弄懂再挑戰！`;
-    else msg = `答對 ${score} 題，<b>要全對才算過關</b>。先把錯題弄懂，再挑戰一回新題目！`;
+    const nWrong = qs.length - score;
+    const near = !passed && official && timeOK && leaveOK && nWrong>0 && nWrong<=2;
+    const improved = official && !passed && prevBest!==null && score>prevBest;
+    let msg, rule = '';
+    if (passed) msg = `<b class="ok-t">🎉 ${cheerPick('pass')}</b>`;
+    else if (!official) msg = allCorrect ? '錯題都會了！回到正式練習，全對就能過關。' : '還有不熟的，再看一次詳解吧。';
+    else if (allCorrect && timeOK && !leaveOK){ msg = `<b>${cheerPick('leave')}</b>`; rule = `全對很棒！但作答中離開頁面 ${leaves} 次，這一回不算過關。`; }
+    else if (!leaveOK){ msg = `<b>${cheerPick('leave')}</b>`; rule = `作答中離開頁面 ${leaves} 次；要全對、在時間內、不離開頁面才算過關。`; }
+    else if (allCorrect && !timeOK){ msg = `<b>${cheerPick('slow')}</b>`; rule = `這一回超過 ${limitMin} 分鐘，所以還不算過關。`; }
+    else if (near) msg = `<b class="near-t">💪 ${cheerPick('near', {w:nWrong, s:score})}</b>`;
+    else { msg = `<b>${cheerPick('low')}</b>`; rule = !timeOK ? `要全對、在 ${limitMin} 分鐘內完成才算過關。` : '要全對才算過關喔。'; }
+    if (improved) msg = `<b class="ok-t">📈 進步了！比上一回多對 ${score-prevBest} 題！</b><br>` + msg;
     app.innerHTML = `<button class="back" id="bk">← 回闖關地圖</button><h2>${cfg.title}</h2>
     <div class="card result"><div class="score">${score} / ${qs.length}</div>
-    <div class="bigpass ${passed?'ok':''}">${passed?'✔ 過關':'尚未過關'}</div>
-    <p>${msg}<br><span class="sub">用時 ${fmtSec(secs)}（限時 ${limitMin} 分鐘）${leaves?`・離開頁面 ${leaves} 次（共 ${awaySecs} 秒）`:''}</span></p>
+    <div class="bigpass ${passed?'ok':near?'nearp':''}">${passed?'✔ 過關':near?'差一點點！':'再接再厲'}</div>
+    <p style="font-size:18px">${msg}${rule?`<br><span class="sub">${rule}</span>`:''}<br><span class="sub">用時 ${fmtSec(secs)}（限時 ${limitMin} 分鐘）${leaves?`・離開頁面 ${leaves} 次（共 ${awaySecs} 秒）`:''}</span></p>
     <div class="toolbar" style="justify-content:center">
       ${wrong.length?'<button class="btn" id="redo">錯題再練一次（不計過關）</button>':''}
       <button class="btn red" id="again">${cfg.examFixed?'再挑戰一次':'再挑戰一回（新題目）'}</button>
       ${cfg.readUid?'<button class="btn ghost" id="reread">回去讀重點</button>':''}
       ${nxt && passed?'<button class="btn ghost" id="next">下一關 →</button>':''}
     </div>
+    ${official?stickerHTML():''}
     ${wrong.length?`<div class="wronglist"><h3>錯題整理</h3><ol>${wrong.map(q=>`<li>${stripBig(q.q)}<br><b class="k">答案：${q.ansText || q.ans.map(a=>q.opts[a]).join('／')}</b><br><span class="sub">${q.exp||''}</span></li>`).join('')}</ol></div>`:''}
     </div>`;
     window.scrollTo(0,0);

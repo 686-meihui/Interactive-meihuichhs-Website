@@ -1752,6 +1752,124 @@ Object.assign(U, {
  k11:{title:'成語區（三）心字・第四課延伸', desc:'推心置腹、如履薄冰…', read:R3.k11, gens:[genIdiomMeaning(['s5','s6']), genIdiomSentence(['s5','s6']), genIdiomSentence(['s5','s6'])]}
 });
 Object.keys(KFIX).forEach(k=>{ FIXED[k] = KFIX[k]; U[k].gens.push(genFixed(FIXED[k])); });
+// ---------- 國字注音（九上第二次段考，99 題） ----------
+// [詞語, 考的字, 注音, 'z'=看國字寫注音 / 'c'=看注音寫國字]
+const ZY = [
+ ['扁舟草履','扁','ㄆㄧㄢ','z'],['庶幾免矣','幾','ㄐㄧ','z'],['連篇累牘','累','ㄌㄟˇ','z'],['轟然消失','轟','ㄏㄨㄥ','c'],['無關宏旨','宏','ㄏㄨㄥˊ','c'],
+ ['大義凜然','凜','ㄌㄧㄣˇ','c'],['慷慨陳詞','慨','ㄎㄞˇ','c'],['縹緲孤鴻影','緲','ㄇㄧㄠˇ','z'],['藻荇交橫','荇','ㄒㄧㄥˋ','z'],['落魄潦倒','魄','ㄊㄨㄛˋ','z'],
+ ['聊以慰藉','聊','ㄌㄧㄠˊ','c'],['動輒得咎','咎','ㄐㄧㄡˋ','c'],['澹泊名利','澹','ㄉㄢˋ','z'],['高瞻遠矚','瞻','ㄓㄢ','z'],['屢獲佳績','屢','ㄌㄩˇ','c'],
+ ['不絕如縷','縷','ㄌㄩˇ','c'],['劍及履及','履','ㄌㄩˇ','c'],['一蓑煙雨','蓑','ㄙㄨㄛ','z'],['料峭春風','峭','ㄑㄧㄠˋ','c'],['回首蕭瑟處','瑟','ㄙㄜˋ','c'],
+ ['駢文','駢','ㄆㄧㄢˊ','z'],['庠序之教','庠','ㄒㄧㄤˊ','z'],['水皆縹碧','縹','ㄆㄧㄠˇ','c'],['急湍甚箭','湍','ㄊㄨㄢ','z'],['負勢競上','負','ㄈㄨˋ','c'],
+ ['互相軒邈','邈','ㄇㄧㄠˇ','c'],['泠泠作響','泠泠','ㄌㄧㄥˊ ㄌㄧㄥˊ','z'],['嚶嚶成韻','嚶嚶','ㄧㄥ ㄧㄥ','c'],['鳶飛戾天','鳶','ㄩㄢ','c'],['經綸世務者','綸','ㄌㄨㄣˊ','z'],
+ ['窺谷忘返','窺','ㄎㄨㄟ','c'],['橫柯上蔽','蔽','ㄅㄧˋ','c'],['疏條交映','映','ㄧㄥˋ','c'],['旖旎風光','旖旎','ㄧˇ ㄋㄧˇ','z'],['惴惴不安','惴','ㄓㄨㄟˋ','z'],
+ ['揣測想法','揣','ㄔㄨㄞˇ','z'],['踹開大門','踹','ㄔㄨㄞˋ','z'],['孤苦伶仃','伶','ㄌㄧㄥˊ','c'],['拎著水桶','拎','ㄌㄧㄥ','z'],['風聲鶴唳','唳','ㄌㄧˋ','c'],
+ ['奼紫嫣紅','奼','ㄔㄚˋ','z'],['涅而不緇','涅','ㄋㄧㄝˋ','z'],['不啻','啻','ㄔˋ','z'],['味蕾','蕾','ㄌㄟˇ','z'],['目光如炬','炬','ㄐㄩˋ','c'],
+ ['瞠目結舌','瞠','ㄔㄥ','z'],['嘮叨不休','嘮','ㄌㄠˊ','z'],['攸關存亡','攸','ㄧㄡ','c'],['有機可乘','乘','ㄔㄥˊ','z'],['一再延宕','宕','ㄉㄤˋ','z'],
+ ['株連九族','株','ㄓㄨ','c'],['口誅筆伐','誅','ㄓㄨ','c'],['朱脣皓齒','朱','ㄓㄨ','c'],['明辨是非','辨','ㄅㄧㄢˋ','c'],['辯論比賽','辯','ㄅㄧㄢˋ','c'],
+ ['去蕪存菁','蕪','ㄨˊ','z'],['言之憮然','憮','ㄨˇ','z'],['撫掌大笑','撫','ㄈㄨˇ','z'],['嫵媚佳人','嫵','ㄨˇ','z'],['戍守邊疆','戍','ㄕㄨˋ','z'],
+ ['病懨懨','懨懨','ㄧㄢ ㄧㄢ','z'],['夢魘','魘','ㄧㄢˇ','z'],['貪求無饜','饜','ㄧㄢˋ','z'],['笑靨如花','靨','ㄧㄝˋ','z'],['噤聲躡足','躡','ㄋㄧㄝˋ','c'],
+ ['震懾不已','懾','ㄓㄜˊ','c'],['心驚膽顫','顫','ㄓㄢˋ','c'],['如坐針氈','氈','ㄓㄢ','c'],['季節嬗遞','嬗','ㄕㄢˋ','c'],['寒風冷冽','冽','ㄌㄧㄝˋ','c'],
+ ['天崩地裂','裂','ㄌㄧㄝˋ','c'],['徒勞無功','徒','ㄊㄨˊ','c'],['曲突徙薪','徙','ㄒㄧˇ','c'],['天上星宿','宿','ㄒㄧㄡˋ','z'],['聽天由命','聽','ㄊㄧㄥˋ','z'],
+ ['頭暈目眩','眩','ㄒㄩㄢˋ','c'],['泫然欲泣','泫','ㄒㄩㄢˋ','c'],['言簡意賅','賅','ㄍㄞ','z'],['放浪形骸','骸','ㄏㄞˊ','z'],['驚濤駭浪','駭','ㄏㄞˋ','z'],
+ ['物競天擇','競','ㄐㄧㄥˋ','c'],['戰戰兢兢','兢兢','ㄐㄧㄥ ㄐㄧㄥ','c'],['買櫝還珠','櫝','ㄉㄨˊ','c'],['窮兵黷武','黷','ㄉㄨˊ','c'],['舐犢情深','犢','ㄉㄨˊ','c'],
+ ['眾目睽睽','睽睽','ㄎㄨㄟˊ ㄎㄨㄟˊ','c'],['閣揆','揆','ㄎㄨㄟˊ','c'],['癸丑年','癸','ㄍㄨㄟˇ','z'],['梵宇僧樓','僧','ㄙㄥ','z'],['面目可憎','憎','ㄗㄥ','z'],
+ ['恃才傲物','恃','ㄕˋ','z'],['兩軍對峙','峙','ㄓˋ','z'],['言語詼諧','諧','ㄒㄧㄝˊ','c'],['白頭偕老','偕','ㄒㄧㄝˊ','c'],['家世寒傖','傖','ㄘㄤ','z'],
+ ['滿目瘡痍','瘡','ㄔㄨㄤ','z'],['愴然涕下','愴','ㄔㄨㄤˋ','z'],['夜闌人靜','闌','ㄌㄢˊ','c'],['力挽狂瀾','瀾','ㄌㄢˊ','c']
+];
+// 常見誤讀（看國字寫注音的陷阱）
+const ZY_TRAP = {扁:['ㄅㄧㄢˇ','ㄆㄧㄢˊ'],幾:['ㄐㄧˇ','ㄑㄧˊ'],累:['ㄌㄟˊ','ㄌㄟˋ'],緲:['ㄇㄧㄠˋ','ㄇㄧㄠˊ'],荇:['ㄒㄧㄥˊ','ㄏㄤˊ'],魄:['ㄆㄛˋ','ㄅㄛˊ'],
+ 澹:['ㄊㄢˊ','ㄓㄢ'],瞻:['ㄓㄢˇ','ㄉㄢ'],蓑:['ㄙㄨㄟ','ㄕㄨㄞ'],駢:['ㄅㄧㄥˋ','ㄆㄧㄥˊ'],庠:['ㄧㄤˊ','ㄒㄧㄤ'],湍:['ㄔㄨㄢˇ','ㄉㄨㄢ'],
+ 泠泠:['ㄌㄥˇ ㄌㄥˇ','ㄌㄧㄥˇ ㄌㄧㄥˇ'],綸:['ㄌㄨㄣˋ','ㄍㄨㄢ'],旖旎:['ㄑㄧˊ ㄋㄧˊ','ㄧˇ ㄋㄧˊ'],惴:['ㄔㄨㄞˇ','ㄉㄨㄢ'],揣:['ㄔㄨㄞˋ','ㄓㄨㄟˋ'],
+ 踹:['ㄔㄨㄞˇ','ㄉㄨㄢ'],拎:['ㄌㄧㄥˊ','ㄌㄧㄣˋ'],奼:['ㄓㄚˋ','ㄊㄨㄛ'],涅:['ㄋㄧㄝ','ㄖˋ'],啻:['ㄉㄧˋ','ㄕˋ'],蕾:['ㄌㄟˊ','ㄌㄟˋ'],
+ 瞠:['ㄊㄤˊ','ㄔㄤˊ'],嘮:['ㄌㄠˋ','ㄌㄠ'],乘:['ㄕㄥˋ','ㄔㄥˋ'],宕:['ㄉㄤˇ','ㄕˊ'],蕪:['ㄨˇ','ㄏㄨ'],憮:['ㄈㄨˇ','ㄨˊ'],撫:['ㄨˇ','ㄈㄨˊ'],
+ 嫵:['ㄨˊ','ㄈㄨˇ'],戍:['ㄒㄩ','ㄖㄨㄥˊ'],懨懨:['ㄧㄢˋ ㄧㄢˋ','ㄧㄢˇ ㄧㄢˇ'],魘:['ㄧㄢ','ㄧㄢˋ'],饜:['ㄧㄢˇ','ㄧㄢ'],靨:['ㄧㄢˇ','ㄧㄢˋ'],
+ 宿:['ㄙㄨˋ','ㄒㄧㄡˇ'],聽:['ㄊㄧㄥ','ㄊㄧㄥˇ'],賅:['ㄏㄞˊ','ㄍㄞˇ'],骸:['ㄏㄞˋ','ㄍㄞ'],駭:['ㄏㄞˊ','ㄍㄞ'],癸:['ㄍㄨㄟ','ㄎㄨㄟˊ'],
+ 僧:['ㄗㄥ','ㄘㄥˊ'],憎:['ㄙㄥ','ㄗㄥˋ'],恃:['ㄕˊ','ㄓˋ'],峙:['ㄕˋ','ㄔˊ'],傖:['ㄔㄨㄤ','ㄑㄧㄤ'],瘡:['ㄘㄤ','ㄔㄨㄤˋ'],愴:['ㄔㄨㄤ','ㄘㄤ']};
+// 易混字（看注音寫國字的陷阱）
+const ZY_CONF = {轟:['哄','烘','鬨'],宏:['弘','洪','紅'],凜:['稟','懍','廩'],慨:['概','溉','既'],聊:['寥','繚','僚'],咎:['究','疚','柩'],
+ 屢:['縷','履','婁'],縷:['屢','履','鏤'],履:['屢','縷','旅'],峭:['悄','俏','消'],瑟:['色','澀','塞'],縹:['飄','漂','標'],負:['附','付','赴'],
+ 邈:['渺','藐','緲'],嚶嚶:['鶯鶯','櫻櫻','嬰嬰'],鳶:['鴛','冤','鴦'],窺:['虧','潰','規'],蔽:['敝','弊','閉'],映:['影','應','央'],
+ 伶:['零','玲','拎'],唳:['戾','淚','厲'],炬:['拒','巨','距'],攸:['悠','憂','優'],株:['誅','朱','珠'],誅:['株','朱','珠'],朱:['株','誅','珠'],
+ 辨:['辯','辮','瓣'],辯:['辨','辮','瓣'],躡:['聶','攝','鑷'],懾:['攝','折','涉'],顫:['戰','擅','氈'],氈:['沾','瞻','顫'],嬗:['擅','善','禪'],
+ 冽:['裂','烈','列'],裂:['冽','烈','列'],徒:['徙','途','塗'],徙:['徒','從','屣'],眩:['泫','炫','玄'],泫:['眩','炫','玄'],
+ 競:['兢','竟','境'],兢兢:['競競','矜矜','驚驚'],櫝:['黷','犢','讀'],黷:['櫝','犢','瀆'],犢:['櫝','黷','讀'],睽睽:['揆揆','葵葵','奎奎'],
+ 揆:['睽','葵','奎'],諧:['偕','皆','楷'],偕:['諧','皆','楷'],闌:['瀾','欄','攔'],瀾:['闌','欄','攔']};
+// 形近但讀音不同
+const ZY_DIFF = [['骸','駭'],['骸','賅'],['駭','賅'],['撫','憮'],['撫','嫵'],['蕪','憮'],['僧','憎'],['恃','峙'],['傖','瘡'],['瘡','愴'],['傖','愴'],
+ ['揣','踹'],['惴','揣'],['惴','踹'],['伶','拎'],['魘','饜'],['饜','靨'],['魘','靨'],['徒','徙'],['縹','緲'],['澹','瞻'],['顫','氈'],['競','兢兢'],['睽睽','窺'],['癸','揆']];
+const ZY_SAME_C = [['屢','縷','履'],['株','誅','朱'],['辨','辯'],['眩','泫'],['諧','偕'],['闌','瀾'],['櫝','黷','犢'],['冽','裂']];
+const zyOf = t => ZY.find(x=>x[1]===t);
+const zyMark = (it, show) => it[0].replace(it[1], `「${show===undefined?it[1]:show}」`);
+const zyMarkZ = it => zyMark(it, it[2]);
+const ZY_TONES = ['','ˊ','ˇ','ˋ'];
+function zyTones(z){ const sy=z.split(' '); const base=sy.map(s=>s.replace(/[ˊˇˋ˙]/g,''));
+  return ZY_TONES.map(t=>base.map(b=>b+t).join(' ')).filter(v=>v!==z); }
+function zyWrongReads(it){ const set=[...(ZY_TRAP[it[1]]||[]), ...shuffle(zyTones(it[2]))]; return [...new Set(set)].filter(v=>v!==it[2]); }
+function zyWrongChars(it){ return (ZY_CONF[it[1]]||[]).filter(v=>v!==it[1]); }
+const zyExp = it => `${it[0]}：「${it[1]}」讀 ${it[2]}`;
+const ZYZ = ZY.filter(x=>x[3]==='z'), ZYC = ZY.filter(x=>x[3]==='c');
+const zyWrongPhrase = (it, w) => it[0].replace(it[1], `「${w}」`);
+
+// 題型1：看國字選注音
+function genZyRead(){ return ()=>{ const it=pick(ZYZ);
+  return mc(`<span class="big">${zyMark(it)}</span><br>「${it[1]}」的讀音是？`, it[2], zyWrongReads(it).slice(0,3), zyExp(it), {key:'zr'+it[0]}); }; }
+// 題型2：看注音選國字
+function genZyChar(){ return ()=>{ const it=pick(ZYC.filter(x=>ZY_CONF[x[1]]));
+  return mc(`<span class="big">${zyMarkZ(it)}</span><br>「${it[2]}」應該寫成哪個字？`, it[1], shuffle(zyWrongChars(it)).slice(0,3), zyExp(it), {key:'zc'+it[0]}); }; }
+// 題型3：讀音正確／錯誤（仿段考選擇題）
+function genZyReadSet(){ return ()=>{ const four=shuffle(ZYZ).slice(0,4); const neg = Math.random()<0.4;
+  const opts = four.map((it,i)=>{ const right = neg ? i!==0 : i===0; return {it, right, s:`${zyMark(it)}（${right?it[2]:pick(zyWrongReads(it).slice(0,3))}）`}; });
+  const key = opts[0];
+  return mc(`下列「　」中的字，何者讀音<b>${neg?'錯誤':'正確'}</b>？`, key.s, opts.slice(1).map(o=>o.s),
+    opts.map(o=>`${o.right?'○':'╳'} ${zyExp(o.it)}`).join('<br>'), {key:'zs'+four.map(x=>x[1]).join('')}); }; }
+// 題型4：用字正確／錯誤
+function genZyCharSet(){ return ()=>{ const four=shuffle(ZYC.filter(x=>ZY_CONF[x[1]])).slice(0,4); const neg = Math.random()<0.4;
+  const opts = four.map((it,i)=>{ const right = neg ? i!==0 : i===0; return {it, right, s: right ? zyMark(it) : zyWrongPhrase(it, pick(zyWrongChars(it)))}; });
+  return mc(`下列「　」中的字，何者用字<b>${neg?'錯誤':'正確'}</b>？`, opts[0].s, opts.slice(1).map(o=>o.s),
+    opts.map(o=>`${o.right?'○':'╳'} ${o.it[0]}（${o.it[1]}，${o.it[2]}）`).join('<br>'), {key:'zw'+four.map(x=>x[1]).join('')}); }; }
+// 題型5：前後讀音相同
+function zySamePairs(){ const one=ZY.filter(x=>!x[1].includes(' ')&&x[1].length===1); const P=[];
+  one.forEach((a,i)=>one.slice(i+1).forEach(b=>{ if(a[2]===b[2]) P.push([a,b]); })); return P; }
+const ZY_SAME = zySamePairs();
+function genZySame(){ return ()=>{ const s=pick(ZY_SAME); const d=shuffle(ZY_DIFF).slice(0,3).map(p=>[zyOf(p[0]),zyOf(p[1])]);
+  const show = p => `${zyMark(p[0])}／${zyMark(p[1])}`;
+  return mc(`下列各組「　」內的字，何者前後讀音<b>相同</b>？`, show(s), d.map(show),
+    [s,...d].map(p=>`${p[0][1]} ${p[0][2]}／${p[1][1]} ${p[1][2]}`).join('<br>'), {key:'zm'+s[0][1]+s[1][1]}); }; }
+// 題型6：注音寫成國字，何者完全正確
+function genZyPair(){ return ()=>{ const gs=shuffle(ZY_SAME_C).slice(0,4).map(g=>shuffle(g).slice(0,2).map(zyOf));
+  const right = p => `${zyMarkZ(p[0])}／${zyMarkZ(p[1])}：<b>${p[0][1]}／${p[1][1]}</b>`;
+  const wrong = p => `${zyMarkZ(p[0])}／${zyMarkZ(p[1])}：<b>${p[1][1]}／${p[0][1]}</b>`;
+  return mc(`下列各組「　」內的注音，寫成國字後何者<b>完全正確</b>？`, right(gs[0]), gs.slice(1).map(wrong),
+    gs.map(p=>`${p[0][0]}（${p[0][1]}）／${p[1][0]}（${p[1][1]}）`).join('<br>'), {key:'zp'+gs[0].map(x=>x[1]).join('')}); }; }
+
+R3.k12 = () => {
+  const row = it => [it[3]==='z' ? zyMark(it).replace(/「(.+?)」/, '「<b style="color:#b3261e">$1</b>」') : zyMarkZ(it), `<b>${it[3]==='z'?it[2]:it[1]}</b>`, it[3]==='z'?'寫注音':'寫國字'];
+  return `<h3>國字注音（段考占一成）</h3>
+<div class="tip">每回 <b>20 題</b>，<b>20 題全對</b>且在 <b>10 分鐘內</b>完成才算過關。題型仿段考：讀音正確／錯誤、用字正確／錯誤、前後讀音相同、注音寫成國字。</div>
+<h3>易混字比較</h3>${tableHTML(['字組','分辨'],[
+ ['屢／縷／履','屢次＝屢獲佳績；絲線＝不絕如縷；鞋子、踩踏＝劍及履及（都讀ㄌㄩˇ）'],
+ ['株／誅／朱','株連（樹根連帶）；口誅筆伐（言字旁：用言語聲討）；朱脣（紅色）'],
+ ['辨／辯','中間是刀（刂）：明辨是非（分辨）；中間是言：辯論比賽'],
+ ['眩／泫','目字旁：頭暈目眩；水字旁：泫然欲泣（流淚）'],
+ ['諧／偕','言字旁：詼諧（說話有趣）；人字旁：白頭偕老（一起）'],
+ ['闌／瀾','門：夜闌人靜（將盡）；水：力挽狂瀾（大浪）'],
+ ['櫝／黷／犢','木：買櫝還珠（木盒）；黑：窮兵黷武（濫用）；牛：舐犢情深（小牛）'],
+ ['冽／裂','冫（冰）：寒風冷冽；衣：天崩地裂'],
+ ['徒／徙','徒勞無功（白白地）；曲突徙薪（遷移，ㄒㄧˇ）'],
+ ['骸／駭／賅','形骸ㄏㄞˊ（骨）；驚濤駭浪ㄏㄞˋ（馬受驚）；言簡意賅ㄍㄞ（完備）'],
+ ['蕪／憮／撫／嫵','去蕪存菁ㄨˊ；言之憮然ㄨˇ；撫掌大笑ㄈㄨˇ；嫵媚ㄨˇ'],
+ ['懨／魘／饜／靨','病懨懨ㄧㄢ；夢魘ㄧㄢˇ；貪求無饜ㄧㄢˋ；笑靨ㄧㄝˋ'],
+ ['揣／踹／惴','揣測ㄔㄨㄞˇ；踹開ㄔㄨㄞˋ；惴惴不安ㄓㄨㄟˋ'],
+ ['僧／憎','僧樓ㄙㄥ；可憎ㄗㄥ'],['恃／峙','恃才傲物ㄕˋ（依仗）；對峙ㄓˋ（對立）'],
+ ['傖／瘡／愴','寒傖ㄘㄤ；瘡痍ㄔㄨㄤ；愴然ㄔㄨㄤˋ'],
+ ['伶／拎／泠','伶仃ㄌㄧㄥˊ；拎著ㄌㄧㄥ；泠泠ㄌㄧㄥˊ（水聲）'],
+ ['競／兢','物競天擇ㄐㄧㄥˋ（競爭）；戰戰兢兢ㄐㄧㄥ（小心謹慎）'],
+ ['睽／揆／窺／癸','眾目睽睽ㄎㄨㄟˊ；閣揆ㄎㄨㄟˊ；窺谷ㄎㄨㄟ；癸丑ㄍㄨㄟˇ'],
+ ['破音字','累牘ㄌㄟˇ、落魄ㄊㄨㄛˋ、澹泊ㄉㄢˋ、有機可乘ㄔㄥˊ、星宿ㄒㄧㄡˋ、聽天由命ㄊㄧㄥˋ、負勢ㄈㄨˋ、經綸ㄌㄨㄣˊ']])}
+<h3>全部 99 題</h3>${tableHTML(['題目','答案','要考'], ZY.map(row))}`;
+};
+U.k12 = {title:'國字注音（20 題全對）', desc:'99 個段考國字注音，每回 20 題', n:20, limit:10, read:R3.k12,
+  gens:[genZyRead(), genZyRead(), genZyChar(), genZyChar(), genZyReadSet(), genZyCharSet(), genZySame(), genZyPair()]};
 
 // ---------- 段考模擬（依原卷 1～36 題） ----------
 [...KQ.hz.slice(0,7).map(o=>Object.assign({grp:'d1'},o)), ...KQ.sd.slice(0,3).map(o=>Object.assign({grp:'d1'},o)), ...KQ.sd.slice(12,17).map(o=>Object.assign({grp:'d1'},o)),
@@ -1775,6 +1893,8 @@ MODULES.push({
      {type:'learn', u:'k9'}, {type:'learn', u:'k10'}, {type:'learn', u:'k11'},
      {type:'mix', id:'p4', title:'合併練習④', desc:'成語總複習（單元 9～11）', units:['k9','k10','k11']},
      {type:'mix', id:'p5', title:'段考總複習', desc:'單元 1～11 全部混合', units:['k1','k2','k3','k4','k5','k6','k7','k8','k9','k10','k11']}]},
+   {name:'國字注音', stages:[
+     {type:'learn', u:'k12'}]},
    {name:'段考模擬', stages:[
      {type:'exam', id:'e3', title:'段考模擬卷', parts:['d1','d2','d3']}]}
   ]
@@ -1950,7 +2070,7 @@ function syncMine(){
       d.rows.forEach(r=>{
         if(r.mode==='錯題再練' || !r.stage) return;
         const id = String(r.stage), total = +r.total||0, correct = +r.correct||0, secs = +r.secs||0;
-        const lim = (+r.lim || (/^e\d/.test(id) ? CONFIG.EXAM_LIMIT_MIN : CONFIG.LIMIT_MIN)) * 60;
+        const lim = (+r.lim || stageLimit(id)) * 60;
         const ok = total>0 && correct===total && secs<=lim && (+r.leaves||0)<=CONFIG.LEAVE_ALLOW;
         const x = srv[id] = srv[id] || {tries:0, best:0, n:total, passed:false};
         x.tries++; x.best = Math.max(x.best, correct); x.n = total;
@@ -2093,7 +2213,8 @@ function buildRound(cfg, n){
   }
   return shuffle(qs);
 }
-function startQuiz(cfg){ runQuiz(Object.assign({}, cfg, {fixed: buildRound(cfg, CONFIG.ROUND_N)})); }
+function startQuiz(cfg){ const n = (!cfg.mix && U[cfg.id] && U[cfg.id].n) || CONFIG.ROUND_N; runQuiz(Object.assign({}, cfg, {fixed: buildRound(cfg, n)})); }
+function stageLimit(id){ if(U[id] && U[id].limit) return U[id].limit; return /^e\d/.test(id) ? CONFIG.EXAM_LIMIT_MIN : CONFIG.LIMIT_MIN; }
 
 function sendRecord(rec){
   if(!CONFIG.GAS_URL) return;
@@ -2320,7 +2441,7 @@ function runQuiz(cfg){
   }
   render();
 }
-function limitFor(cfg){ if(cfg.contest) return cfg.contest.mins; return (cfg.examFixed || /^e\d/.test(cfg.id)) ? CONFIG.EXAM_LIMIT_MIN : CONFIG.LIMIT_MIN; }
+function limitFor(cfg){ if(cfg.contest) return cfg.contest.mins; return cfg.examFixed ? CONFIG.EXAM_LIMIT_MIN : stageLimit(cfg.id); }
 function examQ(e){ const m = Array.isArray(e.a); return {q:e.q, opts:e.opts, ans:m?e.a:[e.a], multi:m, exp:e.exp, tag:e.tag}; }
 function reshuffle(q){ if(q.type==='order' || q.multi || q.keepOrder || q.cols || q.opts.some(o=>/^\(/.test(o))) return q; const order = shuffle(q.opts.map((_,i)=>i)); return Object.assign({}, q, {opts:order.map(i=>q.opts[i]), ans:q.ans.map(a=>order.indexOf(a))}); }
 function stripBig(html){ return html.replace(/<div class="(letter|note|invite|post|grid2|envs)[\s\S]*$/,'（見原題）').replace(/<br>/g,' '); }
@@ -2383,7 +2504,7 @@ function loadTeacher(){
 }
 function renderTeacher(rows){
   const fcls = document.getElementById('fcls').value.trim();
-  const lim = id => (/^e\d/.test(id) ? CONFIG.EXAM_LIMIT_MIN : CONFIG.LIMIT_MIN) * 60;
+  const lim = id => stageLimit(id) * 60;
   const cols = teacherColumns();
   const S = {};
   rows.filter(r=>r.mode!=='錯題再練').forEach(r=>{

@@ -162,6 +162,8 @@ table.lb{font-size:14px;margin:6px 0 0}
 table.lb td{padding:3px 6px}
 table.lb td.rk{width:34px;text-align:center;font-weight:700}
 table.lb td.nm{font-weight:700}
+.kick{font-size:12px;padding:2px 8px;border:1px solid #c9b9a6;border-radius:6px;background:#fff;color:#8a3b2e;cursor:pointer}
+.kick:hover{background:#fbe9e4}
 table.lb tr.me td{background:#fff5cf}
 .board{background:var(--paper);min-height:100vh;padding:10px}
 .board:fullscreen{overflow:auto;padding:14px}
@@ -2289,6 +2291,7 @@ function runQuiz(cfg){
   const limitMin = limitFor(cfg); const limitSec = Math.round(limitMin*60 - (cfg.contest ? cfg.contest.late||0 : 0));
   let timerId, finished = false, answeredN = 0;
   let leaves = 0, awaySecs = 0, awayAt = null;
+  cfg._abort = ()=>{ finished = true; clearInterval(timerId); cfg._abort = null; const w=document.getElementById('leavewarn'); if(w) w.remove(); stopGuard(); exitFull(); };
   enterFull();
   document.body.classList.add('quizmode');
   QUIZ_GUARD = {
@@ -2579,29 +2582,43 @@ function contestEntry(){
     const c = d.contest; const box = document.getElementById('cbox'); if(!box) return;
     if(!c || c.status==='ended'){ box.innerHTML = '目前沒有進行中的競賽，請等老師建立競賽後再按一次。<div class="toolbar"><button class="btn red" id="retry">重新整理</button></div>'; document.getElementById('retry').onclick=contestEntry; return; }
     if(c.cls && c.cls!==String(student.cls)){ box.innerHTML = `這場競賽是 <b>${c.cls} 班</b> 的，你是 ${student.cls} 班，不能加入喔。`; return; }
-    const me = (c.players||{})[`${student.cls}-${student.seat}`];
+    const myKey = `${student.cls}-${student.seat}`; const me = (c.players||{})[myKey];
     if(me && me.group){ return ctWait(c.code, me.group); }
-    if(c.status==='running'){ box.innerHTML = '比賽已經開始了，下一場再加入吧！'; return; }
-    box.innerHTML = `<p>競賽範圍：<b>${ctScopeName(c)}</b>（${ctQuestions(c).length} 題，限時 ${c.mins} 分鐘）</p>
-      <p><b>請選擇你的組別：</b></p>
-      <div class="grpbtns">${GROUPS.map(g=>`<button class="grpbtn" data-g="${g}" style="background:${GROUP_COLOR[g]}">${g} 組</button>`).join('')}</div>
-      <p class="sub">選錯組別請告訴老師。</p>`;
-    box.querySelectorAll('[data-g]').forEach(b=>b.onclick=()=>{
-      const g = b.dataset.g;
-      ctPost({code:c.code, join:true, group:g, cls:student.cls, seat:student.seat, name:student.name, answered:0, correct:0});
-      ctWait(c.code, g);
-    });
+    const kicked = c.kicked && c.kicked[myKey];
+    if(c.status==='running' && !kicked){ box.innerHTML = '比賽已經開始了，下一場再加入吧！'; return; }
+    ctPick(c, kicked ? '老師已經讓你退出原本的組別，請重新選擇正確的組別。' : '');
   }).catch(()=>{ const box=document.getElementById('cbox'); if(box) box.textContent='連線失敗，請稍後再試。'; });
+}
+function ctKicked(c){ const k = `${student.cls}-${student.seat}`; return !!(c && c.kicked && c.kicked[k] && !(c.players||{})[k] && c.kicked[k] > (CT.joinAt||0)); }
+function ctPick(c, note){
+  ctStop();
+  app.innerHTML = `<button class="back" id="bk">← 回闖關地圖</button><h2>🏔 課堂競賽</h2><div class="card" id="cbox">
+    ${note?`<div class="tip">${note}</div>`:''}
+    <p>競賽範圍：<b>${ctScopeName(c)}</b>（${ctQuestions(c).length} 題，限時 ${c.mins} 分鐘）</p>
+    <p><b>請選擇你的組別：</b></p>
+    <div class="grpbtns">${GROUPS.map(g=>`<button class="grpbtn" data-g="${g}" style="background:${GROUP_COLOR[g]}">${g} 組</button>`).join('')}</div>
+    <p class="sub">比賽開始前，選錯了可以自己換組；比賽開始後要換組，請老師在看板上讓你退出。</p></div>`;
+  document.getElementById('bk').onclick = ()=>{ ctStop(); home(); };
+  app.querySelectorAll('[data-g]').forEach(b=>b.onclick=()=>{
+    const g = b.dataset.g; CT.joinAt = ctNow();
+    ctPost({code:c.code, join:true, group:g, cls:student.cls, seat:student.seat, name:student.name, answered:0, correct:0});
+    ctWait(c.code, g);
+  });
 }
 function ctWait(code, g){
   ctStop();
   app.innerHTML = `<button class="back" id="bk">← 離開競賽</button><h2>🏔 課堂競賽</h2>
     <div class="card waitbox"><div class="bigg" style="background:${GROUP_COLOR[g]}">${g}</div>
-    <p>${student.name}，你在 <b>${g} 組</b>。</p><p class="sub" id="wmsg">等待老師按「開始比賽」…</p><div class="dots"><i></i><i></i><i></i></div></div>`;
+    <p>${student.name}，你在 <b>${g} 組</b>。</p><p class="sub" id="wmsg">等待老師按「開始比賽」…</p><div class="dots"><i></i><i></i><i></i></div>
+    <div class="toolbar" style="justify-content:center"><button class="btn ghost small hidden" id="chg">選錯組別？按這裡換組</button></div></div>`;
   document.getElementById('bk').onclick = ()=>{ ctStop(); home(); };
   const check = ()=> ctGet('contest').then(d=>{
     const c = d.contest;
+    if(!document.getElementById('wmsg')){ ctStop(); return; }
     if(!c || c.code!==code){ ctStop(); const m=document.getElementById('wmsg'); if(m) m.textContent='這場競賽已取消，請回地圖重新加入。'; return; }
+    if(ctKicked(c)){ ctStop(); return ctPick(c, '老師已經讓你退出原本的組別，請重新選擇正確的組別。'); }
+    const chg = document.getElementById('chg');
+    if(chg){ chg.classList.toggle('hidden', c.status!=='waiting'); chg.onclick = ()=>ctPick(c, `你原本在 ${g} 組，請重新選擇組別。`); }
     if(c.status==='running'){ ctStop(); ctStart(c, g); }
     else if(c.status==='ended'){ ctStop(); const m=document.getElementById('wmsg'); if(m) m.textContent='比賽已結束。'; }
   }).catch(()=>{});
@@ -2609,10 +2626,24 @@ function ctWait(code, g){
 }
 function ctStart(c, g){
   const st = examStage(c.mod);
-  const qs = ctQuestions(c);
+  const qs = shuffle(ctQuestions(c)).map(ctShuffleOpts);
   const elapsed = Math.max(0, (ctNow() - c.startAt)/1000);
-  runQuiz({id: c.scope==='all' ? st.id+'all' : st.id+c.scope, title:`🏔 課堂競賽・${g} 組`, stage:st, fixed:qs, examFixed:true,
-    contest:{code:c.code, group:g, mins:c.mins, late:elapsed}});
+  const cfg = {id: c.scope==='all' ? st.id+'all' : st.id+c.scope, title:`🏔 課堂競賽・${g} 組`, stage:st, fixed:qs, examFixed:true,
+    contest:{code:c.code, group:g, mins:c.mins, late:elapsed}};
+  runQuiz(cfg);
+  ctStop();
+  CT.poll = setInterval(()=>{
+    if(!QUIZ_GUARD || !cfg._abort){ ctStop(); return; }
+    ctGet('contest').then(d=>{ if(QUIZ_GUARD && cfg._abort && ctKicked(d.contest)){ ctStop(); cfg._abort(); ctPick(d.contest, '老師已經讓你退出原本的組別，請重新選擇正確的組別，加入後會直接開始作答。'); } }).catch(()=>{});
+  }, 4000);
+}
+// 每位學生的題目順序、選項順序都不同；詳解中的 (A)(B)… 也跟著換成新的代號
+function ctShuffleOpts(q){
+  if(q.type==='order' || q.cols || !q.opts || q.opts.some(o=>/^\s*[\(（][A-E][\)）]/.test(o))) return q;
+  const order = shuffle(q.opts.map((_,i)=>i));
+  const L = 'ABCDE', map = {}; order.forEach((old,nw)=>{ map[L[old]] = L[nw]; });
+  const exp = String(q.exp||'').replace(/([\(（])([A-E])([\)）])/g, (m,a,x,b)=> a + (map[x]||x) + b);
+  return Object.assign({}, q, {opts:order.map(i=>q.opts[i]), ans:q.ans.map(a=>order.indexOf(a)).sort((a,b)=>a-b), exp});
 }
 function ctReport(cfg, answered, correct, secs, leaves, done){
   ctPost({code:cfg.contest.code, group:cfg.contest.group, cls:student.cls, seat:student.seat, name:student.name, answered, correct, secs, leaves, done});
@@ -2639,10 +2670,11 @@ function ctResult(cfg, score, total, secs){
   const bk = document.createElement('button'); bk.className='btn ghost'; bk.textContent='回闖關地圖'; bk.onclick=()=>{ ctStop(); home(); };
   app.appendChild(bk);
 }
-function ctBoardList(ps, total, myKey){
+function ctBoardList(ps, total, myKey, teacher){
   if(!ps.length) return '<div class="sub">還沒有人加入</div>';
   return `<table class="lb">${ps.map((p,i)=>`<tr class="${p.key===myKey?'me':''}"><td class="rk">${p.done&&i<3?['🥇','🥈','🥉'][i]:i+1}</td><td class="nm">${p.name}</td>
-    <td>${p.correct}/${total}</td><td class="sub">${p.done?'✔ '+fmtClock(p.secs):`作答中 ${p.answered}/${total}`}</td><td>${p.leaves?'🚪'+p.leaves:''}</td></tr>`).join('')}</table>`;
+    <td>${p.correct}/${total}</td><td class="sub">${p.done?'✔ '+fmtClock(p.secs):`作答中 ${p.answered}/${total}`}</td><td>${p.leaves?'🚪'+p.leaves:''}</td>
+    ${teacher?`<td><button class="kick" data-kick="${p.key}" data-nm="${p.name}" title="讓這位學生退出，重新選組">退出</button></td>`:''}</tr>`).join('')}</table>`;
 }
 function fmtClock(s){ s=Math.round(s||0); return `${Math.floor(s/60)}:${String(s%60).padStart(2,'0')}`; }
 
@@ -2660,7 +2692,7 @@ function contestTeacher(pin){
     <div class="toolbar"><button class="btn red" id="cnew">建立競賽</button><button class="btn ghost" id="copen">打開目前的競賽看板</button></div>
     <div id="cmsg" class="sub"></div>
     <p class="sub">流程：建立競賽 → 學生按地圖上的「🏔 課堂競賽」選組別加入 → 老師按「開始比賽」→ 全班同時作答，看板即時顯示四座山的登山進度。<br>
-    一次只能有一場競賽；建立新的一場會取代舊的。題目用「會考挑戰」的題庫，全班題目與順序相同。</p></div>`;
+    一次只能有一場競賽；建立新的一場會取代舊的。題目用「會考挑戰」的題庫，<b>每位學生的題目順序與選項順序都不一樣</b>。學生選錯組別：比賽開始前可自己換組；也可以由老師在看板上按該生的「退出」，請他重新選組（比賽中退出也能重新加入）。</p></div>`;
   const fill = ()=>{ const m=+document.getElementById('cmod').value; CTT.mod=m; const st=examStage(m);
     document.getElementById('cscope').innerHTML = `<option value="all">全部（${EXAM.filter(e=>st.parts.includes(e.grp)).length} 題）</option>` + st.parts.map(k=>`<option value="${k}">${EXAM_GRP[k]}（${EXAM.filter(e=>e.grp===k).length} 題）</option>`).join(''); };
   fill(); document.getElementById('cmod').onchange = fill;
@@ -2721,7 +2753,11 @@ function renderBoard(){
     const champ = (c.status==='ended' || groupFinished(c,g)) && ps.length ? ps[0] : null;
     box.innerHTML = `<div class="qdh" style="background:${GROUP_COLOR[g]}">${g} 組 <small>${ps.length} 人</small></div>
       <div class="mtn">${mountainSVG(ps, total, g)}${champ?`<div class="champ"><div class="trophy">🏆</div><div class="cname">${champ.name}</div><div class="csub">${champ.correct}/${total}・${fmtClock(champ.secs)}</div></div>`:''}</div>
-      ${ctBoardList(ps, total, '')}`;
+      ${ctBoardList(ps, total, '', true)}`;
+  });
+  document.querySelectorAll('[data-kick]').forEach(b=>b.onclick=()=>{
+    if(!confirm(`讓「${b.dataset.nm}」退出這一組？\n退出後請他在自己的畫面重新選擇正確的組別。`)) return;
+    ctSet('kick', '&key='+encodeURIComponent(b.dataset.kick));
   });
 }
 const TRAIL = [[70,232],[150,210],[80,178],[190,150],[120,118],[215,92],[170,66],[236,36]];
